@@ -1,0 +1,177 @@
+import numpy as np
+
+debugger_input = input(
+    "Do you want to run in this code in debugger mode?\n")  # asks user if s/he wants to start code in a debug mode
+if debugger_input.casefold() == "yes":  # if the answer is yes
+    print("Perfect! You are in the debugger mode!\n"  # display following guides to control debug mode
+          "Please use:\n"
+          "**************************************\n"
+          "n - to execute next line of the code\n"
+          "c - complete all code\n"
+          "p - print\n"
+          "s - step into a function\n"
+          "**************************************\n")
+    import pdb;
+
+    pdb.set_trace()  # if the answer is yes, code starts to run with the debug mode
+elif debugger_input.casefold() == "no":  # if the answer is no code just run without debug mode
+    print("You are not running this code in debugger mode.")
+else:
+    print("You typed invalid input!")
+end_time = int(input("Please enter the ending time value!\n"))
+customer_count = 1
+future_event_list = [] #initial value for future event list
+busy_time = 0 #busy time to calculate idle time by subtracting it from clock time
+counter = 0 #system counter
+idle_time = 0 #initial idle time value
+max_queue_length = 0 #initial max length value to calculate maximum queue length in the system
+lqt_array = [] #lqt array to store max queue length and take maximum of them
+
+"""
+Service time generating function to generate service time by considering cdf of them. 
+We randomly pick a number and assign service time according to related cdf interval.
+It returns service time
+"""
+def service_time_generating():
+    service_time = 0
+    random_digit_assignment = np.random.randint(1, 100)
+
+    if (random_digit_assignment) <= 10:
+        service_time = 1
+    elif (random_digit_assignment) >= 11 and (random_digit_assignment) <= 30:
+        service_time = 2
+    elif (random_digit_assignment) >= 31 and (random_digit_assignment) <= 60:
+        service_time = 3
+    elif (random_digit_assignment) >= 61 and (random_digit_assignment) <= 85:
+        service_time = 4
+    elif (random_digit_assignment) >= 86 and (random_digit_assignment) <= 95:
+        service_time = 5
+    elif (random_digit_assignment) >= 96 and (random_digit_assignment) <= 100:
+        service_time = 6
+
+    return service_time
+
+"""
+Interarrival time generating function to generate interarrival time by considering cdf of them. 
+We randomly pick a number and assign interarrival time according to related cdf interval
+It returns interarrival time
+"""
+def interarrival_time_generating():
+    random_digit_assignment_cdf = np.random.randint(1, 10000)
+    if (random_digit_assignment_cdf) <= 125:
+        interarrival_time = 1
+    elif (random_digit_assignment_cdf) >= 126 and (random_digit_assignment_cdf) <= 250:
+        interarrival_time = 2
+    elif (random_digit_assignment_cdf) >= 251 and (random_digit_assignment_cdf) <= 375:
+        interarrival_time = 3
+    elif (random_digit_assignment_cdf) >= 376 and (random_digit_assignment_cdf) <= 500:
+        interarrival_time = 4
+    elif (random_digit_assignment_cdf) >= 501 and (random_digit_assignment_cdf) <= 625:
+        interarrival_time = 5
+    elif (random_digit_assignment_cdf) >= 626 and (random_digit_assignment_cdf) <= 750:
+        interarrival_time = 6
+    elif (random_digit_assignment_cdf) >= 751 and (random_digit_assignment_cdf) <= 875:
+        interarrival_time = 7
+    elif (random_digit_assignment_cdf) >= 876:
+        interarrival_time = 8
+
+    return interarrival_time
+
+
+while counter <= end_time: #while of the system. We take end_time-1 to let code run until the last person in the system.
+    if counter == 0: #checks if it is the first person. Because we assume  system is starting to work when the first person is arrived and other values are calculted based on first person
+        interarrival_time = interarrival_time_generating() #generates interarrival time for the first person
+        service_time = service_time_generating() #generates service time for the first person
+        clock = 0 #As we assume  system is starting to work when the first person is arrived initial clock time is 0
+        lqt = 0 #As we assume  system is starting to work when the first person is arrived initial lqt value is 0
+        lst = 1 #As we assume  system is starting to work when the first person is arrived initial lst value is 0. Person directly enters the service
+        arrival_time = interarrival_time + clock #arrival time should be equal to clock + interarrival time for the next person
+        departure_time = service_time + clock #departure time of the current person should be calculated by adding up currenct clock and service that is randomly selected
+        departure_time_FEL = [departure_time, "D"] #it stores value of the departure time of the current person in the departure list to be added FEL later
+        arrival_time_FEL = [arrival_time, "A"] #it stores value of the arrival time that is generated by the current person in the arrival list to be added FEL later
+        end_time_FEL = [end_time, "E"] #for the first time, we assign a end time to the system and sotre it in the end time FEL
+        future_event_list.append(departure_time_FEL) #it assigns departure list to future event list
+        future_event_list.append(arrival_time_FEL) #it assigns arrival list to future event list
+        future_event_list.append(end_time_FEL) #it assigns end time list to future event list
+        future_event_list.sort() #it sorts the values in the future event list, as we store intiger as a first values it considers numbers while sorting
+        counter += 1 #increments counter to let system going on
+    else: #if the counter is not 0 and system pass the first person
+        if (lst == 1): #if the system is busy, it means not idle
+            idle_time_counter = future_event_list[0][0] #it takes the first person's time in the system
+            busy_time += idle_time_counter - clock #it adds up all the idle time counter values if the system is not idle to calculated idle time at the end.
+
+
+        # print(len(future_event_list))
+        if future_event_list[0][0] == future_event_list[1][0] and len(future_event_list) <= 4: #it checks if there are 2 person that has the same system time
+            future_event_list[0], future_event_list[1] = future_event_list[1], future_event_list[0] #then if equals it changes the places of them.
+            #The reason to the make above calculation. As we sort according to numbers and some times system times for the arrival and departure events comes same,
+            #System were taking arrival events first as it starts with the Letter "A". I would like performs departure events first.
+        else:
+            pass
+        clock = future_event_list[0][0] #we update the clock by considering system time of the person
+        if future_event_list[0][1] == "D": #if the second value in the first array of the future event list is equal to letter "D". System is going to do departure event.
+            future_event_list.remove(future_event_list[0]) #it firstly removes the first element in the system to prevent overloading
+            if lqt > 0: #then checks if the queue length is greater than 0.
+                lqt -= 1 # if the queue length is greater than zero we reduce the queue length by 1
+                service_time = service_time_generating() #then to calculate departure time for the person who attended system from the queue, we generate service time
+                departure_time = service_time + clock #it calculates departure time by adding current clock time and service time generated
+                departure_time_FEL = [departure_time, "D"] #it again creates a departure event list to add them to the future event list as a list.
+                future_event_list.append(departure_time_FEL) #it appends departure event to the future event list
+                future_event_list.sort() #then sorts the last values
+            else: # if the queue length is not greater than zero
+                lst = 0 #we just make lst to 0
+            counter += 1 #increment counter
+        elif future_event_list[0][1] == "A": #if the second value in the first array of the future event list is equal to letter "A". System is going to do arrival event.
+            future_event_list.remove(future_event_list[0]) #it firstly removes the first element in the system to prevent overloading
+            if lst == 1: #checks if the lst is equal to zero
+                previous_lqt = lqt #if lst is equal to zero it assigns lqt value to variable before incrementing it
+                lqt += 1 #it increments current lqt value
+                if lqt > previous_lqt: #it checks previous lqt value and current lqt value that is incremented.
+                    lqt_array.append(lqt) #if it is greater than previous value it adds higher value to the lqt array to calculate max queue length
+                else: #otherwise
+                    continue #system continue
+                max_queue_length = max(lqt_array) #obtains max queue length from lqt array.
+                interarrival_time = interarrival_time_generating() #to let new arrival come it generates interarrival time by using function
+                arrival_time = interarrival_time + clock #it caluculates the arrival time by using interarrival time and current clock time
+                arrival_time_FEL = [arrival_time, "A"] #it again creates a arrival event list to add them to the future event list as a list.
+                future_event_list.append(arrival_time_FEL) #it appends arrival event to the future event list
+                future_event_list.sort() #then sorts the last values again
+            else: #if the lst is not equal to 1
+                lst = 1 #it makes lst value 1
+                service_time = service_time_generating() #generates service time to calculate departure time
+                departure_time = service_time + clock #it calculates departure time by using current clock time end service time
+                departure_time_FEL = [departure_time, "D"] #it again creates a departure event list to add them to the future event list as a list.
+                future_event_list.append(departure_time_FEL) #it appends departure event to the future event list
+                interarrival_time = interarrival_time_generating() #to let new arrival come it generates interarrival time by using function
+                arrival_time = interarrival_time + clock #it caluculates the arrival time by using interarrival time and current clock time
+                arrival_time_FEL = [arrival_time, "A"] #it again creates a arrival event list to add them to the future event list as a list.
+                future_event_list.append(arrival_time_FEL) #it appends arrival event to the future event list
+                future_event_list.sort() #lastly sorts the last values again
+            counter += 1 #end increments counter to let other persons continue
+        else:
+            print("You Exceed System Limit!") #it gives a message to the user when they exceed the end limit of the system.
+            break #breaks the loop
+
+    if debugger_input == "yes" and customer_count <= 60: #checks if the debugger input is "Yes". If the answer is yes it is going to print the table.
+        d = {customer_count: [clock, lqt, lst, future_event_list, busy_time, max_queue_length], #it is a dictionary to assign clock value to some arrays. And use them later to print values.
+             }
+        if customer_count == 1:  # if the customer count is 1 it creates the title of the columns for table, it prevents creating table for every customer count
+            print("{:<25} {:<25} {:<25} {:<25} {:<50} {:<25} {:<25}".format('Snapshot Count - ','Clock - ',
+                                                                     'LQ(t) - ',
+                                                                     'LS(t) - ',
+                                                                     'Future Event List - ',
+                                                                     "Busy Time - ",
+                                                                     "MQ - "))
+        # to reach the values of the dictionary it assigns parameters to v value and then print it in the following format
+        for k, v in d.items():
+            my_clock ,my_lqt, my_lst, my_future_event_list, my_busy_time, my_max_queue_length = v
+            print("{:<25} {:<25} {:<25} {:<25} {:<50} {:<25} {:<25}".format(k,my_clock, my_lqt, my_lst, str(my_future_event_list),
+                                                                     my_busy_time, my_max_queue_length))
+        customer_count += 1  # increments customer count for output customer number
+    last_clock_value = clock
+
+print("Clock Value: ", last_clock_value) #prints clock value
+print("Busy Time: ", busy_time ) #prints busy time
+print("End Time: ", end_time) #prints end time
+print("Maximum queue length is: ", max_queue_length) #it prints the max queue length in the system
+print("Checkout counter idle time is: ", ((last_clock_value - busy_time) / end_time) * 100) #it prints the idle time in the system
